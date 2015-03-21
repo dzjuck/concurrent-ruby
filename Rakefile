@@ -4,7 +4,8 @@ require_relative './lib/extension_helper'
 
 ## load the two gemspec files
 CORE_GEMSPEC = Gem::Specification.load('concurrent-ruby.gemspec')
-EXT_GEMSPEC = Gem::Specification.load('concurrent-ruby-ext.gemspec')
+EXTENSION_GEMSPEC = Gem::Specification.load('concurrent-ruby-ext.gemspec')
+EXPERIMENTAL_GEMSPEC = Gem::Specification.load('concurrent-ruby-experimental.gemspec')
 
 ## constants used for compile/build tasks
 
@@ -49,7 +50,7 @@ elsif Concurrent.allow_c_extensions?
   ## create the compile tasks for the extension gem
   require 'rake/extensiontask'
 
-  Rake::ExtensionTask.new(EXTENSION_NAME, EXT_GEMSPEC) do |ext|
+  Rake::ExtensionTask.new(EXTENSION_NAME, EXTENSION_GEMSPEC) do |ext|
     ext.ext_dir = 'ext/concurrent'
     ext.lib_dir = 'lib/concurrent'
     ext.source_pattern = '*.{c,h}'
@@ -103,10 +104,16 @@ namespace :build do
     sh 'mv *.gem pkg/'
   end
 
+  desc "Build experimental gem into the pkg directory"
+  task :experimental do
+    sh "gem build #{EXPERIMENTAL_GEMSPEC.name}.gemspec"
+    sh 'mv *.gem pkg/'
+  end
+
   unless Concurrent.jruby?
     desc "Build #{EXTENSION_GEM} into the pkg directory"
     task :ext => [:clean] do
-      sh "gem build #{EXT_GEMSPEC.name}.gemspec"
+      sh "gem build #{EXTENSION_GEMSPEC.name}.gemspec"
       sh 'mv *.gem pkg/'
     end
   end
@@ -125,7 +132,7 @@ if Concurrent.jruby?
   task :build => ['build:core']
 else
   desc 'Build core and extension gems'
-  task :build => ['build:core', 'build:ext']
+  task :build => ['build:core', 'build:ext', 'build:experimental']
 end
 
 ## the RSpec task that compiles extensions when available
